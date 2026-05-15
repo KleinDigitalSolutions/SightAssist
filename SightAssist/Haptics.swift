@@ -1,4 +1,6 @@
 import Foundation
+
+#if canImport(CoreHaptics)
 import CoreHaptics
 
 enum Haptics {
@@ -15,7 +17,15 @@ enum Haptics {
             try player.start(atTime: 0)
             engine.notifyWhenPlayersFinished { _ in .stopEngine }
         } catch {
-            // Fail silently for devices without haptics or errors
+            // Fail silently
         }
     }
 }
+
+#else
+
+enum Haptics {
+    static func tap() {}
+}
+
+#endif

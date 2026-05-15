@@ -1,4 +1,6 @@
 import Foundation
+
+#if canImport(UIKit) && canImport(Vision)
 import Vision
 import UIKit
 
@@ -58,3 +60,13 @@ private extension CGImagePropertyOrientation {
         }
     }
 }
+
+#else
+
+final class TextRecognizer {
+    func recognizeText(in image: Any, languages: [String] = ["de-DE", "en-US"], completion: @escaping (Result<String, Error>) -> Void) {
+        completion(.success(""))
+    }
+}
+
+#endif

@@ -8,35 +8,45 @@
 import SwiftUI
 import AVFoundation
 import Vision
+
+#if canImport(UIKit)
 import UIKit
+#endif
 
 struct ContentView: View {
     @StateObject private var speaker = Speaker()
     @StateObject private var controller = CaptureController()
 
+    @AppStorage("appMode") private var modeRawValue: String = AppMode.context.rawValue
+
     @State private var isCapturing = false
+    @State private var dragOffset: CGFloat = 0
+#if canImport(UIKit)
     @State private var captureProxy: PhotoCaptureProxy?
+#endif
 
     private let textRecognizer = TextRecognizer()
+    private let objectDetector = ObjectDetector()
+
+    private var currentMode: AppMode {
+        AppMode(rawValue: modeRawValue) ?? .context
+    }
 
     var body: some View {
         ZStack {
             CameraView(session: controller.session)
                 .accessibilityLabel("Kameravorschau")
-                .accessibilityHint("Doppeltippen, um ein Bild zu analysieren.")
+                .accessibilityHint(currentMode.accessibilityHint)
 
+            // Modus-Indikator am oberen Rand
             VStack {
+                modeIndicator
                 Spacer()
-                Text(isCapturing ? "Analysiere..." : "Doppeltippen zum Analysieren")
-                    .font(.headline)
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .accessibilityHidden(true)
+                statusLabel
             }
             .padding()
 
-            // Unsichtbarer, aber zugänglicher Button über die ganze Fläche
+            // Analyse-Button (unsichtbar, volle Fläche)
             Color.clear
                 .contentShape(Rectangle())
                 .overlay(
@@ -44,26 +54,102 @@ struct ContentView: View {
                         Text("")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Bild analysieren")
-                    .accessibilityHint("Doppeltippen, um ein Foto aufzunehmen und zu beschreiben.")
+                    .accessibilityLabel("Bild analysieren (\(currentMode.shortLabel))")
+                    .accessibilityHint(currentMode.accessibilityHint)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 )
                 .allowsHitTesting(true)
         }
+        .gesture(
+            DragGesture(minimumDistance: 50)
+                .onChanged { value in
+                    dragOffset = value.translation.width
+                }
+                .onEnded { value in
+                    let threshold: CGFloat = 80
+                    if value.translation.width < -threshold {
+                        // Nach links gewischt → nächster Modus
+                        switchToNextMode()
+                    } else if value.translation.width > threshold {
+                        // Nach rechts gewischt → vorheriger Modus
+                        switchToPreviousMode()
+                    }
+                    dragOffset = 0
+                }
+        )
         .onChange(of: controller.authorized) { _, newValue in
             if !newValue {
                 speaker.speak("Kamerazugriff nicht erlaubt. Bitte in den Einstellungen aktivieren.")
             }
         }
         .onAppear {
-            speaker.speak("SightAssist bereit. Doppeltippen zum Analysieren.")
+            announceCurrentMode()
         }
     }
 
+    // MARK: - Modus-Indikator
+
+    private var modeIndicator: some View {
+        HStack(spacing: 12) {
+            ForEach(AppMode.allCases, id: \.self) { mode in
+                Text(mode.shortLabel)
+                    .font(.caption)
+                    .fontWeight(mode == currentMode ? .bold : .regular)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        mode == currentMode
+                            ? Color.accentColor.opacity(0.8)
+                            : Color.ultraThinMaterial
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .foregroundColor(mode == currentMode ? .white : .primary)
+            }
+        }
+        .padding(8)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityHidden(true)
+    }
+
+    private var statusLabel: some View {
+        Text(isCapturing ? "Analysiere..." : "Doppeltippen zum Analysieren")
+            .font(.headline)
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .accessibilityHidden(true)
+    }
+
+    // MARK: - Modus-Umschaltung
+
+    private func switchToNextMode() {
+        let all = AppMode.allCases
+        guard let idx = all.firstIndex(of: currentMode) else { return }
+        let next = all[(idx + 1) % all.count]
+        modeRawValue = next.rawValue
+        announceCurrentMode()
+    }
+
+    private func switchToPreviousMode() {
+        let all = AppMode.allCases
+        guard let idx = all.firstIndex(of: currentMode) else { return }
+        let prev = all[(idx - 1 + all.count) % all.count]
+        modeRawValue = prev.rawValue
+        announceCurrentMode()
+    }
+
+    private func announceCurrentMode() {
+        speaker.speak(currentMode.voiceOverLabel)
+    }
+
+    // MARK: - Analyse-Trigger
+
     private func triggerAnalysis() {
+        #if canImport(UIKit)
         guard !isCapturing, controller.authorized else { return }
         isCapturing = true
-        speaker.speak("Analysiere.")
+        speaker.speak(currentMode == .context ? "Analysiere Text." : "Erkenne Objekte.")
         let proxy = PhotoCaptureProxy(controller: controller) { image in
             defer {
                 isCapturing = false
@@ -74,26 +160,41 @@ struct ContentView: View {
                 return
             }
             Haptics.tap()
-            textRecognizer.recognizeText(in: image) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let text):
-                        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            speaker.speak("Ich konnte keinen Text erkennen.")
-                        } else {
-                            speaker.speak(text)
+            switch currentMode {
+            case .context:
+                textRecognizer.recognizeText(in: image) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let text):
+                            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                            speaker.speak(trimmed.isEmpty ? "Ich konnte keinen Text erkennen." : trimmed)
+                        case .failure:
+                            speaker.speak("Fehler bei der Texterkennung.")
                         }
-                    case .failure:
-                        speaker.speak("Fehler bei der Texterkennung.")
+                    }
+                }
+            case .detection:
+                objectDetector.detect(in: image) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let detection):
+                            speaker.speak(detection.description)
+                        case .failure:
+                            speaker.speak("Fehler bei der Objekterkennung.")
+                        }
                     }
                 }
             }
         }
         captureProxy = proxy
         proxy.capture()
+        #else
+        speaker.speak("Diese Funktion ist auf dieser Plattform nicht verfügbar.")
+        #endif
     }
 }
 
+#if canImport(UIKit)
 final class PhotoCaptureProxy: NSObject, AVCapturePhotoCaptureDelegate {
     private let controller: CaptureController
     private let completion: (UIImage?) -> Void
@@ -113,6 +214,7 @@ final class PhotoCaptureProxy: NSObject, AVCapturePhotoCaptureDelegate {
         completion(image)
     }
 }
+#endif
 
 #Preview {
     ContentView()
