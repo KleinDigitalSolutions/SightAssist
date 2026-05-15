@@ -28,6 +28,9 @@ struct ContentView: View {
     private let textRecognizer = TextRecognizer()
     private let objectDetector = ObjectDetector()
 
+    @State private var visionModel = VisionModel()
+    @State private var ttsBuffer = ""
+
     private var currentMode: AppMode {
         AppMode(rawValue: modeRawValue) ?? .context
     }
@@ -87,6 +90,9 @@ struct ContentView: View {
                 speaker.speak("Kamerazugriff nicht erlaubt. Bitte in den Einstellungen aktivieren.")
             }
         }
+        .task {
+            await visionModel.prepare()
+        }
         .onAppear {
             announceCurrentMode()
         }
@@ -107,7 +113,14 @@ struct ContentView: View {
     }
 
     private var statusLabel: some View {
-        Text(isCapturing ? "Analysiere..." : "Doppeltippen zum Analysieren")
+        let labelText: String = {
+            if isCapturing { return "Analysiere..." }
+            if currentMode == .vlm, case .downloading = visionModel.state {
+                return "Lade KI-Modell..."
+            }
+            return "Doppeltippen zum Analysieren"
+        }()
+        return Text(labelText)
             .font(.headline)
             .padding()
             .background(.ultraThinMaterial)
@@ -181,7 +194,14 @@ struct ContentView: View {
         DispatchQueue.main.async {
             self.isCapturing = true
         }
-        speaker.speak(currentMode == .context ? "Analysiere Text." : "Erkenne Objekte.")
+        let modeMessage: String = {
+            switch currentMode {
+            case .context:   return "Analysiere Text."
+            case .detection: return "Erkenne Objekte."
+            case .vlm:       return "Beschreibe Bild."
+            }
+        }()
+        speaker.speak(modeMessage)
         let proxy = PhotoCaptureProxy(controller: controller) { image in
             defer {
                 DispatchQueue.main.async {
@@ -216,6 +236,23 @@ struct ContentView: View {
                         case .failure:
                             speaker.speak("Fehler bei der Objekterkennung.")
                         }
+                    }
+                }
+            case .vlm:
+                ttsBuffer = ""
+                Task {
+                    do {
+                        for try await chunk in visionModel.describe(image: image) {
+                            await MainActor.run {
+                                speaker.streamChunk(chunk, buffer: &ttsBuffer)
+                            }
+                        }
+                        if !ttsBuffer.isEmpty {
+                            speaker.speak(ttsBuffer)
+                            ttsBuffer = ""
+                        }
+                    } catch {
+                        speaker.speak("Fehler bei der Bildbeschreibung.")
                     }
                 }
             }

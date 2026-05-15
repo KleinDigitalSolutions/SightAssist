@@ -15,8 +15,21 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 
     func speak(_ text: String, language: String = "de-DE") {
-        speechQueue.append(text)
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        speechQueue.append(trimmed)
         processQueue(language: language)
+    }
+
+    /// Satzweise puffern: spricht erst bei Satzzeichen (., !, ?, :, \n)
+    func streamChunk(_ chunk: String, buffer: inout String) {
+        buffer += chunk
+        let enders: Set<Character> = [".", "!", "?", ":", "\n"]
+        if let last = buffer.last, enders.contains(last) {
+            let toSpeak = buffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !toSpeak.isEmpty { speak(toSpeak) }
+            buffer = ""
+        }
     }
 
     private func processQueue(language: String = "de-DE") {
