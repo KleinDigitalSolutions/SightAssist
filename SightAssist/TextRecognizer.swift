@@ -7,9 +7,22 @@ import UIKit
 final class TextRecognizer {
     private let queue = DispatchQueue(label: "text.recognizer.queue")
 
+    enum RecognitionError: LocalizedError {
+        case invalidImage
+        case processingFailed
+        var errorDescription: String? {
+            switch self {
+            case .invalidImage:
+                return "Bild konnte nicht verarbeitet werden."
+            case .processingFailed:
+                return "Texterkennung fehlgeschlagen."
+            }
+        }
+    }
+
     func recognizeText(in image: UIImage, languages: [String] = ["de-DE", "en-US"], completion: @escaping (Result<String, Error>) -> Void) {
         guard let cgImage = image.cgImage else {
-            completion(.success(""))
+            completion(.failure(RecognitionError.invalidImage))
             return
         }
         let orientation = CGImagePropertyOrientation(image.imageOrientation)
@@ -27,7 +40,11 @@ final class TextRecognizer {
                 obs.topCandidates(1).first?.string
             }
             let text = lines.joined(separator: "\n")
-            completion(.success(text))
+            if text.isEmpty {
+                completion(.failure(RecognitionError.processingFailed))
+            } else {
+                completion(.success(text))
+            }
         }
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
@@ -40,23 +57,6 @@ final class TextRecognizer {
             } catch {
                 completion(.failure(error))
             }
-        }
-    }
-}
-
-private extension CGImagePropertyOrientation {
-    init(_ uiOrientation: UIImage.Orientation) {
-        switch uiOrientation {
-        case .up: self = .up
-        case .down: self = .down
-        case .left: self = .left
-        case .right: self = .right
-        case .upMirrored: self = .upMirrored
-        case .downMirrored: self = .downMirrored
-        case .leftMirrored: self = .leftMirrored
-        case .rightMirrored: self = .rightMirrored
-        @unknown default:
-            self = .up
         }
     }
 }

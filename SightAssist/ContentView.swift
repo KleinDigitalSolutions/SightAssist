@@ -137,12 +137,16 @@ struct ContentView: View {
     private func triggerAnalysis() {
         #if canImport(UIKit)
         guard !isCapturing, controller.authorized else { return }
-        isCapturing = true
+        DispatchQueue.main.async {
+            self.isCapturing = true
+        }
         speaker.speak(currentMode == .context ? "Analysiere Text." : "Erkenne Objekte.")
         let proxy = PhotoCaptureProxy(controller: controller) { image in
             defer {
-                isCapturing = false
-                captureProxy = nil
+                DispatchQueue.main.async {
+                    self.isCapturing = false
+                    self.captureProxy = nil
+                }
             }
             guard let image = image else {
                 speaker.speak("Kein Bild verfügbar.")

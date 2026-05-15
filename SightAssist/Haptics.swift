@@ -4,10 +4,18 @@ import Foundation
 import CoreHaptics
 
 enum Haptics {
+    private static var hapticEngine: CHHapticEngine?
+
     static func tap() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         do {
-            let engine = try CHHapticEngine()
+            let engine: CHHapticEngine
+            if let existing = hapticEngine {
+                engine = existing
+            } else {
+                engine = try CHHapticEngine()
+                hapticEngine = engine
+            }
             try engine.start()
             let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
             let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7)

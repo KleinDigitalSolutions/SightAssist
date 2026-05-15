@@ -4,6 +4,8 @@ import Combine
 
 final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private let synth = AVSpeechSynthesizer()
+    private var speechQueue: [String] = []
+    private var isProcessingQueue = false
 
     @Published private(set) var isSpeaking = false
 
@@ -13,10 +15,17 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 
     func speak(_ text: String, language: String = "de-DE") {
+        speechQueue.append(text)
+        processQueue(language: language)
+    }
+
+    private func processQueue(language: String = "de-DE") {
+        guard !isProcessingQueue, !speechQueue.isEmpty else { return }
+        isProcessingQueue = true
+        let text = speechQueue.removeFirst()
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: language)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-        synth.stopSpeaking(at: .immediate)
         synth.speak(utterance)
     }
 
@@ -28,9 +37,17 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         isSpeaking = false
+        isProcessingQueue = false
+        if !speechQueue.isEmpty {
+            processQueue()
+        }
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         isSpeaking = false
+        isProcessingQueue = false
+        if !speechQueue.isEmpty {
+            processQueue()
+        }
     }
 }
