@@ -6,40 +6,37 @@
 import Foundation
 
 enum AppMode: String, CaseIterable {
-    case context    // Modus 1: Kontext-Beschreiber – Vision OCR
-    case detection  // Modus 2: Objekt-Erkennung – Person + Text
-    case vlm        // Modus 3: VLM-Bildbeschreibung – Gemma 4 lokal
+    case scan       // Modus 1: Scannen – Text, Objekte, Farbe (Single Tap)
+    case navigate   // Modus 2: Navigieren – Live, Bus, Ampel (kein Tap)
+    case describe   // Modus 3: Beschreiben – Gemma (Double Tap)
 
     var voiceOverLabel: String {
         switch self {
-        case .context:
-            return "Modus 1: Kontext-Beschreiber – erkennt Text in der Umgebung."
-        case .detection:
-            return "Modus 2: Objekt-Erkennung – erkennt Personen, Text und Schilder."
-        case .vlm:
-            return "Modus 3: Bildbeschreibung – beschreibt das Bild detailliert mit lokaler KI."
+        case .scan:
+            return "Modus: Scannen. Einfach tippen. Erkennt Text, Objekte und Farben."
+        case .navigate:
+            return "Modus: Navigieren. Läuft live. Erkennt Ampeln, Buslinien und Schilder."
+        case .describe:
+            return "Modus: Beschreiben. Doppeltippen für KI-Bildbeschreibung."
         }
     }
 
     var shortLabel: String {
         switch self {
-        case .context:
-            return "Kontext"
-        case .detection:
-            return "Objekte"
-        case .vlm:
-            return "VLM"
+        case .scan:      return "Scannen"
+        case .navigate:  return "Navigieren"
+        case .describe:  return "Beschreiben"
         }
     }
 
-    var accessibilityHint: String {
+    var launchAnnouncement: String {
         switch self {
-        case .context:
-            return "Doppeltippen zum Analysieren des Kamerabilds auf Text."
-        case .detection:
-            return "Doppeltippen zum Erkennen von Objekten im Kamerabild."
-        case .vlm:
-            return "Doppeltippen für eine KI-Bildbeschreibung. Benötigt Modell-Download beim ersten Start."
+        case .scan:
+            return "SightAssist bereit. Modus Scannen. Einfach tippen zum Analysieren."
+        case .navigate:
+            return "SightAssist bereit. Modus Navigieren. Kamera auf die Umgebung richten."
+        case .describe:
+            return "SightAssist bereit. Modus Beschreiben. Doppeltippen für KI-Analyse."
         }
     }
 }

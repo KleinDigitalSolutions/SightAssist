@@ -30,13 +30,15 @@ SightAssist verwandelt ein iPhone in ein sprechendes Auge. Die App fotografiert 
 
 ## ✨ Modi
 
-### Modus 1: Kontext-Beschreiber (OCR)
-Erkennt Text im Kamerabild und liest ihn vor. Für Schilder, Speisekarten, Türschilder, Produktetiketten.
+| # | Modus | Geste | Funktion |
+|---|-------|-------|----------|
+| 1 | **Scannen** | Single Tap | Text, Objekte, Farbe parallel |
+| 2 | **Navigieren** | Live (kein Tap) | Ampeln, Buslinien, Schilder |
+| 3 | **Beschreiben** | Double Tap | Gemma 4 E2B lokal |
 
-### Modus 2: Objekt-Erkennung (Person, Text, Schild)
-Erkennt Personen und Text gleichzeitig. Sagt z. B.: *„2 Personen erkannt. Text: Notausgang.“*
+Wischen wechselt den Modus. VoiceOver sagt jeden Modus an.
 
-*Geplant: Modus 3 – lokale VLM-Bildbeschreibung mit Google Gemma 4 E2B*
+
 
 ## 🏗️ Architektur
 
@@ -47,12 +49,17 @@ SightAssist/
 ├── AppMode.swift                  # Modus-Enum (Kontext / Objekt-Erkennung)
 ├── CameraView.swift               # AVCaptureSession SwiftUI-Wrapper
 ├── CaptureController.swift        # Kamera-Zugriff, Session, Aufnahme
-├── TextRecognizer.swift           # Vision OCR (VNRecognizeTextRequest)
-├── ObjectDetector.swift           # Vision Person+Text (VNDetectHumanRectangles)
-├── Speaker.swift                  # TTS mit AVSpeechSynthesizer + Queue
-├── Haptics.swift                  # Haptisches Feedback
+├── TextRecognizer.swift           # Vision OCR
+├── ObjectDetector.swift           # Multi-Detektion: Text + Personen + Farbe
+├── Speaker.swift                  # Premium-Voice TTS + Queue
+├── Haptics.swift                  # 4 Muster: Richtung, Erfolg, Fehler, Denken
 ├── Utilities.swift                # Gemeinsame Extensions
-└── Assets.xcassets/               # App-Icon und Assets
+├── AppMode.swift                  # 3 Modi: Scannen, Navigieren, Beschreiben
+├── ModeManager.swift              # Modus-Wechsel + VoiceOver + Haptik
+├── CameraGuidance.swift           # Framing-Assistent
+├── LiveNavigationAnalyzer.swift   # Live: Ampeln, Buslinien, Schilder
+├── VisionModel.swift              # Gemma 4 E2B via MLX Swift
+└── Assets.xcassets/               # App-Icon
 ```
 
 ## 🧱 Technologie-Stack
