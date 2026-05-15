@@ -92,18 +92,7 @@ struct ContentView: View {
     private var modeIndicator: some View {
         HStack(spacing: 12) {
             ForEach(AppMode.allCases, id: \.self) { mode in
-                Text(mode.shortLabel)
-                    .font(.caption)
-                    .fontWeight(mode == currentMode ? .bold : .regular)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        mode == currentMode
-                            ? Color.accentColor.opacity(0.8)
-                            : Color.ultraThinMaterial
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .foregroundColor(mode == currentMode ? .white : .primary)
+                ModeChip(mode: mode, isActive: mode == currentMode)
             }
         }
         .padding(8)
@@ -215,6 +204,24 @@ final class PhotoCaptureProxy: NSObject, AVCapturePhotoCaptureDelegate {
     }
 }
 #endif
+
+// MARK: - ModeChip
+
+private struct ModeChip: View {
+    let mode: AppMode
+    let isActive: Bool
+
+    var body: some View {
+        Text(mode.shortLabel)
+            .font(.caption)
+            .fontWeight(isActive ? .bold : .regular)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isActive ? AnyShapeStyle(Color.accentColor.opacity(0.8)) : AnyShapeStyle(Material.ultraThinMaterial))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .foregroundColor(isActive ? .white : .primary)
+    }
+}
 
 #Preview {
     ContentView()

@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import Combine
 
 final class CaptureController: NSObject, ObservableObject {
     let session = AVCaptureSession()
@@ -15,6 +16,7 @@ final class CaptureController: NSObject, ObservableObject {
     }
 
     private func configureAudioSession() {
+#if os(iOS) || os(visionOS)
         let audio = AVAudioSession.sharedInstance()
         do {
             try audio.setCategory(.playback, mode: .default, options: [.mixWithOthers])
@@ -22,6 +24,7 @@ final class CaptureController: NSObject, ObservableObject {
         } catch {
             print("AVAudioSession error: \(error)")
         }
+#endif
     }
 
     private func checkAndConfigureCamera() {
