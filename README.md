@@ -115,3 +115,16 @@ MIT – siehe [LICENSE](LICENSE).
 ---
 
 *Entwickelt mit Fokus auf Barrierefreiheit. Alle Features sind für VoiceOver optimiert.*
+
+---
+
+## 🔜 Nächste Schritte
+
+**Prinzip: 100% lokal, kein Abo, kein Server, keine Kosten.**
+
+- [ ] Navigation-Modus entfernen
+- [ ] Onboarding: Allergien, Ernaehrung, Buslinie per Sprache → UserDefaults
+- [ ] Gemma 4 E2B auf iPhone 14+ aktivieren (vlmEnabled = true)
+- [ ] KI-Kontext: gespeicherte Praeferenzen beim Scannen nutzen
+- [ ] Kamera-Fuehrung per Sprache ("mehr rechts")
+- [ ] Gedaechtnis: letzter Scan merken

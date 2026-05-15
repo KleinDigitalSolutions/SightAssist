@@ -77,9 +77,9 @@ struct ContentView: View {
                     switch result {
                     case .success(let s):
                         var p: [String] = []
-                        if !s.text.isEmpty { p.append("Text: \(s.text)") }
+                        if !s.text.isEmpty { p.append(formatScannedText(s.text)) }
                         if s.personCount > 0 { p.append("\(s.personCount) \(s.personCount == 1 ? "Person" : "Personen")") }
-                        if s.dominantColor != "unbekannt" { p.append("Farbe: \(s.dominantColor)") }
+                        // Farbe absichtlich raus — erst Gemma macht das präzise genug
                         speaker.speak(p.isEmpty ? "Nichts erkannt." : p.joined(separator: ". ") + ".")
                         Haptics.success()
                     case .failure: speaker.speak("Fehler beim Scannen."); Haptics.error()
@@ -109,14 +109,29 @@ struct ContentView: View {
 
     private func stopNavigation() { navTimer?.invalidate(); navTimer = nil }
 
+    /// Macht aus "44287 Dortmund" → "4 4 2 8 7 Dortmund" — Ziffern einzeln vorlesen
+    private func formatScannedText(_ text: String) -> String {
+        let words = text.components(separatedBy: .whitespacesAndNewlines)
+        let formatted = words.map { word -> String in
+            // Nur wenn das Wort aus 3+ Ziffern besteht (Postleitzahl, Beträge)
+            let digitsOnly = word.filter(\.isNumber)
+            if digitsOnly.count >= 3 && digitsOnly == word {
+                return digitsOnly.map(String.init).joined(separator: " ")
+            }
+            return word
+        }
+        return formatted.joined(separator: " ")
+    }
+
     // MARK: - Erster Start
 
     private func speakWelcomeIfFirstLaunch() {
         let key = "didLaunchBefore"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.speaker.speak("Willkommen bei SightAssist.")
+        UserDefaults.standard.synchronize()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            speaker.speak("Willkommen bei SightAssist.")
         }
     }
 
@@ -147,8 +162,9 @@ struct ContentView: View {
         let key = "didSwitchModeBefore"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.speaker.speak("Jeder Modus macht etwas anderes. Probiere einfach aus.")
+        UserDefaults.standard.synchronize()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            speaker.speak("Jeder Modus macht etwas anderes. Probiere einfach aus.")
         }
     }
 
@@ -156,8 +172,9 @@ struct ContentView: View {
         let key = "didScanBefore"
         guard !UserDefaults.standard.bool(forKey: key) else { return }
         UserDefaults.standard.set(true, forKey: key)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.speaker.speak("Ich habe die Kamera ausgelesen und sage dir, was ich erkannt habe.")
+        UserDefaults.standard.synchronize()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            speaker.speak("Ich habe die Kamera ausgelesen und sage dir, was ich erkannt habe.")
         }
     }
 
