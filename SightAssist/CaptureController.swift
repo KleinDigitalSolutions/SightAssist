@@ -1,6 +1,5 @@
 import Foundation
 import AVFoundation
-import UIKit
 
 final class CaptureController: NSObject, ObservableObject {
     let session = AVCaptureSession()
