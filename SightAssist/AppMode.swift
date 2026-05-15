@@ -10,6 +10,11 @@ enum AppMode: String, CaseIterable {
     case navigate   // Modus 2: Navigieren – Live, Bus, Ampel (kein Tap)
     case describe   // Modus 3: Beschreiben – Gemma (Double Tap)
 
+    static let vlmEnabled = false
+    static var activeCases: [AppMode] {
+        allCases.filter { $0 != .describe || vlmEnabled }
+    }
+
     var voiceOverLabel: String {
         switch self {
         case .scan:

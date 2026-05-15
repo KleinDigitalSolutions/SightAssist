@@ -14,14 +14,14 @@ final class ModeManager {
     init(speaker: Speaker) { self.speaker = speaker }
 
     func switchToNext() {
-        let all = AppMode.allCases
+        let all = AppMode.activeCases
         guard let idx = all.firstIndex(of: currentMode) else { return }
         modeRawValue = all[(idx + 1) % all.count].rawValue
         announce()
     }
 
     func switchToPrevious() {
-        let all = AppMode.allCases
+        let all = AppMode.activeCases
         guard let idx = all.firstIndex(of: currentMode) else { return }
         modeRawValue = all[(idx - 1 + all.count) % all.count].rawValue
         announce()

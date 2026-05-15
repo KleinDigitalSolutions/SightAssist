@@ -35,7 +35,7 @@ struct ContentView: View {
             VStack {
                 Spacer()
                 HStack(spacing: 12) {
-                    ForEach(AppMode.allCases, id: \.self) { mode in
+                    ForEach(AppMode.activeCases, id: \.self) { mode in
                         ModeChip(mode: mode, isActive: mode == modeManager?.currentMode)
                     }
                 }
@@ -49,11 +49,15 @@ struct ContentView: View {
                 .allowsHitTesting(true)
         }
         .gesture(DragGesture(minimumDistance: 50).onEnded { value in
-            if value.translation.width < -80 { modeManager.switchToNext() }
-            else if value.translation.width > 80 { modeManager.switchToPrevious() }
+            if value.translation.width < -80 { modeManager.switchToNext(); explainFirstModeSwitch() }
+            else if value.translation.width > 80 { modeManager.switchToPrevious(); explainFirstModeSwitch() }
         })
         .onChange(of: controller.authorized) { _, v in if !v { speaker.speak("Kamerazugriff nicht erlaubt.") } }
-        .onAppear { modeManager = ModeManager(speaker: speaker); modeManager.announceLaunch() }
+        .onAppear {
+            modeManager = ModeManager(speaker: speaker)
+            modeManager.announceLaunch()
+            speakWelcomeIfFirstLaunch()
+        }
         .task { await visionModel.prepare() }
         .onChange(of: modeManager?.currentMode) { _, m in
             guard let m else { return }
@@ -63,7 +67,7 @@ struct ContentView: View {
 
     private func triggerScan() {
         guard !isCapturing, controller.authorized, modeManager.currentMode != .navigate else { return }
-        isCapturing = true; Haptics.thinking()
+        isCapturing = true; Haptics.thinking(); explainFirstScan()
         capturePhoto { image in
             defer { isCapturing = false }
             guard let image else { speaker.speak("Kein Bild."); Haptics.error(); return }
@@ -105,6 +109,17 @@ struct ContentView: View {
 
     private func stopNavigation() { navTimer?.invalidate(); navTimer = nil }
 
+    // MARK: - Erster Start
+
+    private func speakWelcomeIfFirstLaunch() {
+        let key = "didLaunchBefore"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.speaker.speak("Willkommen bei SightAssist.")
+        }
+    }
+
     private func triggerGemma() {
         guard !isCapturing, controller.authorized else { return }
         guard case .ready = visionModel.state else { speaker.speak("KI-Modell wird noch geladen."); return }
@@ -123,6 +138,26 @@ struct ContentView: View {
                     Haptics.success()
                 } catch { speaker.speak("Fehler bei der Beschreibung."); Haptics.error() }
             }
+        }
+    }
+
+    // MARK: - Erste Benutzung (Hilfe beim Lernen)
+
+    private func explainFirstModeSwitch() {
+        let key = "didSwitchModeBefore"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.speaker.speak("Jeder Modus macht etwas anderes. Probiere einfach aus.")
+        }
+    }
+
+    private func explainFirstScan() {
+        let key = "didScanBefore"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.speaker.speak("Ich habe die Kamera ausgelesen und sage dir, was ich erkannt habe.")
         }
     }
 
