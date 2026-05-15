@@ -1,194 +1,109 @@
 # SightAssist
 
-[![Swift](https://img.shields.io/badge/Swift-5.9+-FF6B6B?style=flat-square&logo=swift)](https://www.swift.org)
-[![iOS](https://img.shields.io/badge/iOS-16.0+-000000?style=flat-square&logo=apple)](https://www.apple.com/ios)
+[![Swift](https://img.shields.io/badge/Swift-5.0+-FA7343?style=flat-square&logo=swift)](https://www.swift.org)
+[![Platform](https://img.shields.io/badge/Platform-iOS%2018+-000000?style=flat-square&logo=apple)](https://www.apple.com/ios)
+[![Devices](https://img.shields.io/badge/Devices-iPhone%2014+-blue?style=flat-square)](https://www.apple.com/iphone)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-blue?style=flat-square)](https://developer.apple.com/xcode/swiftui)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-Eine moderne iOS-App zur Bildanalyse mit Kamerazugriff und Sprachausgabe. SightAssist nutzt SwiftUI und AVFoundation für eine benutzerfreundliche Oberfläche und bietet umfangreiche Barrierefreiheitsfunktionen.
+**Eine KI-gestützte Sehhilfe-App für blinde und sehbehinderte Menschen. Nimmt die Umgebung über die Kamera auf, analysiert sie mit lokaler KI und beschreibt sie per Sprachausgabe – vollständig auf dem Gerät, kein Internet nötig.**
 
-## 🎯 Features
+## 🎯 Für wen und warum
 
-- 📷 **Live-Kameravorschau** – Echtzeit-Kamerafeed mit optimalem Seitenverhältnis
-- 🖼️ **Bildanalyse** – Verarbeitung und Analyse von Fotos
-- 🔊 **Sprachausgabe** – Akustische Ausgabe von Analyseergebnissen
-- ♿ **Barrierefreiheit** – Umfangreiche VoiceOver- und Accessibility-Unterstützung
-- 🎨 **Native SwiftUI UI** – Modernes Design mit gerundeten Elementen und Material-Effekten
-- 🚀 **Performant** – Optimiert für schnelle Bildverarbeitung
+SightAssist verwandelt ein iPhone in ein sprechendes Auge. Die App fotografiert die Umgebung, erkennt Text, Gegenstände und Personen und liest die Beschreibung vor. Alles läuft lokal auf dem Gerät – kein einziges Byte verlässt das iPhone. Das ist entscheidend, denn:
 
-## 📋 Systemanforderungen
+- **Kein Netz nötig** – funktioniert auch in Kellern, U‑Bahnen, Wald
+- **Keine Privatsphäre‑Risiken** – Bilder werden nie hochgeladen
+- **Sofort** – keine Latenz durch Server‑Anfragen
+- **Zuverlässig** – kein Cloud-Dienst, der ausfallen kann
 
-- **iOS 16.0** oder höher
-- **Xcode 15.0** oder höher
-- **Swift 5.9** oder höher
-- Gerät mit Kamera (iPhone oder iPad)
+## 📱 System-Voraussetzungen
 
-## 🚀 Installation
+| Anforderung | Minimum |
+|---|---|
+| iOS | 18.0 oder höher |
+| Gerät | iPhone 14 oder neuer |
+| RAM | 6 GB (für lokale KI-Modelle) |
+| Kamera | Rückkamera erforderlich |
 
-### Aus dem Quellcode
+*App läuft auch auf Mac (Apple Silicon) und Apple Vision Pro mit reduzierter Funktionalität.*
 
-1. Repository klonen:
-```bash
-git clone https://github.com/KleinDigitalSolutions/SightAssist.git
-cd SightAssist
-```
+## ✨ Modi
 
-2. In Xcode öffnen:
-```bash
-open SightAssist.xcodeproj
-```
+### Modus 1: Kontext-Beschreiber (OCR)
+Erkennt Text im Kamerabild und liest ihn vor. Für Schilder, Speisekarten, Türschilder, Produktetiketten.
 
-3. Zielgerät auswählen und **Run** drücken (⌘R)
+### Modus 2: Objekt-Erkennung (Person, Text, Schild)
+Erkennt Personen und Text gleichzeitig. Sagt z. B.: *„2 Personen erkannt. Text: Notausgang.“*
 
-### Anforderungen im Info.plist
+*Geplant: Modus 3 – lokale VLM-Bildbeschreibung mit Google Gemma 4 E2B*
 
-Die App benötigt folgende Berechtigungen:
-- **NSCameraUsageDescription** – Kamerazugriff
-- **NSMicrophoneUsageDescription** – Mikrofonzugriff (optional, für Sprachausgabe)
-
-## 📁 Projektstruktur
+## 🏗️ Architektur
 
 ```
 SightAssist/
-├── SightAssistApp.swift          # App-Einstiegspunkt
-├── ContentView.swift              # Hauptschnittstelle mit Kamera & Bedienelemente
-├── CameraView.swift               # UIViewRepresentable Kamera-Komponente
-├── CaptureController.swift        # Verwaltung der Bildaufnahme
-├── Speaker.swift                  # Sprachausgabe-Modul
-├── Assets.xcassets/               # App-Icons und Assets
-└── README.md                       # Diese Datei
-
-SightAssistTests/                  # Unit Tests
-SightAssistUITests/                # UI-Tests
+├── SightAssistApp.swift          # @main Einstiegspunkt
+├── ContentView.swift              # Haupt-UI: Kamera, Modi, Gesten
+├── AppMode.swift                  # Modus-Enum (Kontext / Objekt-Erkennung)
+├── CameraView.swift               # AVCaptureSession SwiftUI-Wrapper
+├── CaptureController.swift        # Kamera-Zugriff, Session, Aufnahme
+├── TextRecognizer.swift           # Vision OCR (VNRecognizeTextRequest)
+├── ObjectDetector.swift           # Vision Person+Text (VNDetectHumanRectangles)
+├── Speaker.swift                  # TTS mit AVSpeechSynthesizer + Queue
+├── Haptics.swift                  # Haptisches Feedback
+├── Utilities.swift                # Gemeinsame Extensions
+└── Assets.xcassets/               # App-Icon und Assets
 ```
 
-## 💻 Hauptkomponenten
+## 🧱 Technologie-Stack
 
-### ContentView
-Die zentrale Benutzeroberfläche mit:
-- Live-Kamerastream
-- Doppeltipp-Gesten zum Analysieren
-- Statusanzeige (Analysieren/Bereit)
-- Barrierefreiheitsunterstützung
+| Komponente | Technologie |
+|---|---|
+| UI | SwiftUI |
+| Kamera | AVFoundation (AVCaptureSession) |
+| OCR | Vision (VNRecognizeTextRequest) |
+| Objekt-Erkennung | Vision (VNDetectHumanRectanglesRequest) |
+| Sprachausgabe | AVSpeechSynthesizer |
+| Haptik | CoreHaptics |
+| Geplant: VLM | MLX Swift + Gemma 4 E2B |
+| Barrierefreiheit | VoiceOver, Accessibility Labels, Hints |
 
-### CameraView
-SwiftUI-Wrapper für AVCaptureSession:
-- Kamera-Videostream-Rendering
-- Optimiertes Seitenverhältnis (resizeAspectFill)
-- UIViewRepresentable-Implementierung
+## 🎮 Bedienung
 
-### CaptureController
-ObservableObject zur Verwaltung:
-- AVCaptureSession
-- Gerätezugriff und Berechtigungen
-- Bilderfassung und Verarbeitung
+| Geste | Aktion |
+|---|---|
+| **Doppeltippen** | Bild analysieren (aktueller Modus) |
+| **Nach links wischen** | Nächster Modus |
+| **Nach rechts wischen** | Vorheriger Modus |
 
-### Speaker
-Sprachausgabe-Modul für:
-- Text-zu-Sprache (AVSpeechSynthesizer)
-- Deutsche Sprachausgabe
-- Asynchrone Verarbeitung
+VoiceOver sagt den aktuellen Modus beim Start und bei jedem Wechsel an.
 
-## 🎮 Verwendung
+## 🔐 Berechtigungen
 
-### Einfache Bildanalyse
+| Schlüssel | Grund |
+|---|---|
+| `NSCameraUsageDescription` | Kamera-Zugriff für Umgebungsanalyse |
+| (geplant) `NSMicrophoneUsageDescription` | Spracheingabe für Fragen |
+| (geplant) `NSSpeechRecognitionUsageDescription` | On‑Device Spracherkennung |
 
-1. App öffnen
-2. Kamera auf Objekt/Szene richten
-3. **Doppeltippen** auf dem Bildschirm
-4. Analyseergebnis wird vorgelesen
+## 🚀 Installation
 
-### Mit VoiceOver
-
-Die App ist vollständig für VoiceOver optimiert:
-- **Doppeltippen**: Bild analysieren
-- **Alle UI-Elemente** sind beschriftet
-- **Englische/Deutsche Labels** verfügbar
-
-## 🔧 Konfiguration
-
-### Kamerazugriff aktivieren
-
-In `ContentView.swift`:
-```swift
-CameraView(session: controller.session)
-    .accessibilityLabel("Kameravorschau")
-```
-
-### Sprache anpassen
-
-In `Speaker.swift` die Sprache wechseln:
-```swift
-utterance.voice = AVSpeechSynthesisVoice(language: "de-DE")
-```
-
-## 🧪 Tests
-
-### Unit Tests ausführen
 ```bash
-xcodebuild test -scheme SightAssist
+git clone https://github.com/KleinDigitalSolutions/SightAssist.git
+cd SightAssist
+open SightAssist.xcodeproj
 ```
 
-### UI Tests ausführen
-```bash
-xcodebuild test -scheme SightAssistUITests
-```
-
-## 📱 Build & Deployment
-
-### Release Build erstellen
-```bash
-xcodebuild -scheme SightAssist -configuration Release build
-```
-
-### Für App Store
-1. Xcode → Product → Archive
-2. Organizer öffnen
-3. App Store Connect → Distribute App
-
-## 🤝 Contributing
-
-Beiträge sind willkommen! Bitte folgen Sie diesen Schritten:
-
-1. Fork des Repositories
-2. Feature Branch erstellen (`git checkout -b feature/AmazingFeature`)
-3. Änderungen committen (`git commit -m 'Add AmazingFeature'`)
-4. Branch pushen (`git push origin feature/AmazingFeature`)
-5. Pull Request öffnen
-
-### Code Style
-- SwiftUI-Konventionen verwenden
-- Barrierefreiheit beachten (accessibility labels)
-- Aussagekräftige Commits schreiben
-
-## 🐛 Bug Reports
-
-Bugs können über GitHub Issues gemeldet werden. Bitte folgendes hinzufügen:
-- iOS-Version
-- Gerät (iPhone/iPad)
-- Schritte zum Reproduzieren
-- Erwartetes vs. aktuelles Verhalten
+Team in Signing & Capabilities setzen, ⌘R.
 
 ## 📄 Lizenz
 
-Dieses Projekt ist unter der [MIT-Lizenz](LICENSE) lizenziert. Siehe die [LICENSE](LICENSE) Datei für Details.
+MIT – siehe [LICENSE](LICENSE).
 
 ## 👤 Autor
 
 **Özgür Azap** – [@KleinDigitalSolutions](https://github.com/KleinDigitalSolutions)
 
-## 🙏 Danksagungen
-
-- Apple SwiftUI Framework
-- AVFoundation für Kamerazugriff
-- Community für Feedback und Unterstützung
-
-## 📚 Ressourcen
-
-- [SwiftUI Documentation](https://developer.apple.com/documentation/swiftui/)
-- [AVFoundation Guide](https://developer.apple.com/av-foundation/)
-- [Accessibility Guide](https://developer.apple.com/accessibility/)
-
 ---
 
-**Aktiv entwickelt** ✨ – Für Fragen und Suggestions: [Issues](https://github.com/KleinDigitalSolutions/SightAssist/issues)
+*Entwickelt mit Fokus auf Barrierefreiheit. Alle Features sind für VoiceOver optimiert.*
