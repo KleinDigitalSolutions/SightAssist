@@ -8,6 +8,7 @@ final class CaptureController: NSObject, ObservableObject {
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
 
     @Published var authorized: Bool = false
+    @Published var authorizationStatus: AVAuthorizationStatus = .notDetermined
 
     override init() {
         super.init()
@@ -28,7 +29,9 @@ final class CaptureController: NSObject, ObservableObject {
     }
 
     private func checkAndConfigureCamera() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        authorizationStatus = status
+        switch status {
         case .authorized:
             authorized = true
             configureSession()
@@ -36,6 +39,7 @@ final class CaptureController: NSObject, ObservableObject {
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 DispatchQueue.main.async {
                     self?.authorized = granted
+                    self?.authorizationStatus = granted ? .authorized : .denied
                 }
                 if granted {
                     self?.configureSession()
@@ -43,7 +47,6 @@ final class CaptureController: NSObject, ObservableObject {
             }
         default:
             authorized = false
-            // Consider prompting user to enable camera in Settings
         }
     }
 

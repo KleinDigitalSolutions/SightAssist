@@ -38,6 +38,11 @@ struct ContentView: View {
                 .accessibilityLabel("Kameravorschau")
                 .accessibilityHint(currentMode.accessibilityHint)
 
+            // Kamera-verweigert-Overlay
+            if controller.authorizationStatus == .denied || controller.authorizationStatus == .restricted {
+                cameraDeniedOverlay
+            }
+
             // Modus-Indikator am oberen Rand
             VStack {
                 modeIndicator
@@ -109,6 +114,42 @@ struct ContentView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .accessibilityHidden(true)
     }
+
+    private var cameraDeniedOverlay: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "camera.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(.secondary)
+            Text("Kamerazugriff erforderlich")
+                .font(.headline)
+            Text("SightAssist benötigt die Kamera, um Ihre Umgebung zu beschreiben.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            Button {
+                openSystemSettings()
+            } label: {
+                Label("Einstellungen öffnen", systemImage: "gear")
+                    .frame(maxWidth: 200)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityHint("Öffnet die Systemeinstellungen, um den Kamerazugriff zu erlauben.")
+        }
+        .padding(32)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Kamerazugriff nicht erlaubt. Tippen, um Einstellungen zu öffnen.")
+    }
+
+#if canImport(UIKit)
+    private func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+#else
+    private func openSystemSettings() {}
+#endif
 
     // MARK: - Modus-Umschaltung
 
