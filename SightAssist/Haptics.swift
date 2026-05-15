@@ -20,15 +20,12 @@ enum Haptics {
 
     static func direction(_ dir: Direction) {
         guard supportsHaptics else { return }
-        let events: [CHHapticEvent] = switch dir {
-        case .left: [
-            event(0.0, 0.6, 0.4),
-            event(0.08, 0.3, 0.4),
-        ]
-        case .right: [
-            event(0.0, 0.3, 0.4),
-            event(0.08, 0.6, 0.4),
-        ]
+        let events: [CHHapticEvent]
+        switch dir {
+        case .left:
+            events = [event(0.0, 0.6, 0.4), event(0.08, 0.3, 0.4)]
+        case .right:
+            events = [event(0.0, 0.3, 0.4), event(0.08, 0.6, 0.4)]
         }
         play(events)
     }

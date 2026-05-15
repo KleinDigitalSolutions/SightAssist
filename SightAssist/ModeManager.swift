@@ -2,24 +2,16 @@
 //  ModeManager.swift
 //  SightAssist
 //
-//  Verwaltet Modus-Wechsel, VoiceOver-Ansagen und Haptik-Rückmeldung.
-//
 
 import SwiftUI
 
-@Observable
 final class ModeManager {
     private let speaker: Speaker
-
     @AppStorage("appMode") private var modeRawValue: String = AppMode.scan.rawValue
 
-    var currentMode: AppMode {
-        AppMode(rawValue: modeRawValue) ?? .scan
-    }
+    var currentMode: AppMode { AppMode(rawValue: modeRawValue) ?? .scan }
 
-    init(speaker: Speaker) {
-        self.speaker = speaker
-    }
+    init(speaker: Speaker) { self.speaker = speaker }
 
     func switchToNext() {
         let all = AppMode.allCases
@@ -35,12 +27,6 @@ final class ModeManager {
         announce()
     }
 
-    func announce() {
-        speaker.speak(currentMode.voiceOverLabel)
-        Haptics.success()
-    }
-
-    func announceLaunch() {
-        speaker.speak(currentMode.launchAnnouncement)
-    }
+    func announce() { speaker.speak(currentMode.voiceOverLabel); Haptics.success() }
+    func announceLaunch() { speaker.speak(currentMode.launchAnnouncement) }
 }
